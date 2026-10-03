@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <linearGradient id="bg-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#E95420"/>
+      <stop offset="100%" stop-color="#77216F"/>
+    </linearGradient>
+    <linearGradient id="board-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#3d3846"/>
+      <stop offset="100%" stop-color="#241f31"/>
+    </linearGradient>
+    <linearGradient id="paper-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#f6f5f4"/>
+    </linearGradient>
+    <linearGradient id="clip-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#9a9996"/>
+      <stop offset="100%" stop-color="#5e5c64"/>
+    </linearGradient>
+    <filter id="drop-shadow" x="-10%" y="-10%" width="120%" height="125%">
+      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+
+  <!-- Base App Background Icon Container -->
+  <rect x="8" y="8" width="112" height="112" rx="26" fill="url(#bg-grad)" filter="url(#drop-shadow)"/>
+
+  <!-- Clipboard Board -->
+  <rect x="26" y="24" width="76" height="86" rx="10" fill="url(#board-grad)"/>
+
+  <!-- Paper on Clipboard -->
+  <rect x="32" y="32" width="64" height="72" rx="6" fill="url(#paper-grad)"/>
+
+  <!-- Content Lines on Paper -->
+  <rect x="40" y="48" width="34" height="4" rx="2" fill="#E95420"/>
+  <rect x="40" y="58" width="48" height="3" rx="1.5" fill="#9a9996"/>
+  <rect x="40" y="66" width="44" height="3" rx="1.5" fill="#c0bfbc"/>
+  <rect x="40" y="74" width="38" height="3" rx="1.5" fill="#c0bfbc"/>
+  <rect x="40" y="82" width="28" height="3" rx="1.5" fill="#deddda"/>
+
+  <!-- Clipboard Metallic Clip Base -->
+  <rect x="46" y="18" width="36" height="18" rx="4" fill="url(#clip-grad)"/>
+  <rect x="52" y="22" width="24" height="6" rx="3" fill="#241f31"/>
+  <!-- Clip Handle Ring -->
+  <path d="M 54 18 C 54 13, 74 13, 74 18" fill="none" stroke="url(#clip-grad)" stroke-width="4" stroke-linecap="round"/>
+</svg>

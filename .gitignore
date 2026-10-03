@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual Environment
+.venv/
+env/
+venv/
+ENV/
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+*.db-journal
+
+# Packaging & Build
+build/
+dist/
+*.egg-info/
+packaging/staging/
+*.deb
+
+# Development / Temporary artifacts
+scratch/
+test_*.db
+test_*.png
+tmp/
+.DS_Store

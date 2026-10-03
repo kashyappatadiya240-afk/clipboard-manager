@@ -1,0 +1,13 @@
+[Desktop Entry]
+Name=Ubuntu Clipboard
+GenericName=Clipboard Manager
+Comment=Local clipboard history manager for Ubuntu and GNOME
+Exec=ubuntu-clipboard
+Icon=com.kashyap.UbuntuClipboard
+Terminal=false
+Type=Application
+Categories=Utility;GNOME;GTK;
+StartupNotify=true
+StartupWMClass=com.kashyap.UbuntuClipboard
+Keywords=clipboard;history;paste;copy;gnome;wayland;
+X-GNOME-UsesNotifications=false

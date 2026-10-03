@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>com.kashyap.UbuntuClipboard</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+  <name>Ubuntu Clipboard</name>
+  <summary>Local clipboard history manager for Ubuntu and GNOME</summary>
+  <description>
+    <p>
+      Ubuntu Clipboard is a fast, lightweight, and native clipboard history manager designed for Ubuntu and GNOME on Wayland.
+    </p>
+    <ul>
+      <li>Text and image clipboard history tracking</li>
+      <li>Instant Super+V global shortcut activation</li>
+      <li>Compact cards with 3-line previews and aspect-ratio preserved thumbnails</li>
+      <li>Real-time search across complete content</li>
+      <li>Pin up to 10 favorite items with FIFO limitation on unpinned history</li>
+      <li>100% private and local SQLite storage with zero telemetry or network calls</li>
+    </ul>
+  </description>
+  <url type="homepage">https://github.com/kashyap/ubuntu-clipboard</url>
+  <launchable type="desktop-id">com.kashyap.UbuntuClipboard.desktop</launchable>
+  <provides>
+    <binary>ubuntu-clipboard</binary>
+  </provides>
+  <content_rating type="oars-1.1"/>
+  <releases>
+    <release version="1.0.0" date="2026-10-03">
+      <description>
+        <p>Initial production release of Ubuntu Clipboard.</p>
+      </description>
+    </release>
+  </releases>
+  <developer id="com.kashyap">
+    <name>Kashyap</name>
+  </developer>
+</component>
