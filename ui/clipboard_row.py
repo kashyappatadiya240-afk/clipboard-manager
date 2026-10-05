@@ -360,11 +360,11 @@ class ClipboardRow(Gtk.ListBoxRow):
         meta_box.append(self.time_label)
         self.status_stack.add_named(meta_box, "metadata")
 
-        # View B: "✓ Copied" visual feedback
+        # View B: "Copied" visual feedback (single checkmark icon + label)
         copied_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
         copied_icon = Gtk.Image.new_from_icon_name("object-select-symbolic")
         copied_icon.add_css_class("accent")
-        copied_label = Gtk.Label(label="✓ Copied")
+        copied_label = Gtk.Label(label="Copied")
         copied_label.set_xalign(0.0)
         copied_label.add_css_class("caption")
         copied_label.add_css_class("accent")

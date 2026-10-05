@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 class ClipboardWindow(Adw.ApplicationWindow):
-    """Main window for the Ubuntu Clipboard Manager with history management and launcher support."""
+    """Main window for the Klipora Manager with history management and launcher support."""
 
     def __init__(
         self,
@@ -32,7 +32,7 @@ class ClipboardWindow(Adw.ApplicationWindow):
         self._items: List[ClipboardItem] = []
         self._current_query: str = ""
 
-        self.set_title("Ubuntu Clipboard")
+        self.set_title("Klipora")
         self.set_default_size(540, 680)
         self.set_size_request(420, 520)
 
@@ -139,7 +139,7 @@ class ClipboardWindow(Adw.ApplicationWindow):
 
         # 1. Header bar
         header_bar = Adw.HeaderBar()
-        title_widget = Adw.WindowTitle(title="Clipboard", subtitle="Ubuntu Clipboard")
+        title_widget = Adw.WindowTitle(title="Clipboard", subtitle="Klipora")
         header_bar.set_title_widget(title_widget)
 
         # Clear history button in header bar
@@ -243,6 +243,9 @@ class ClipboardWindow(Adw.ApplicationWindow):
         logger.info("Presenting clipboard history window...")
         self.set_visible(True)
         self.present()
+        surface = self.get_surface()
+        if surface and isinstance(surface, Gdk.Toplevel):
+            surface.focus(Gdk.CURRENT_TIME)
         self.focus_search_or_list()
 
     def focus_search_or_list(self) -> None:
@@ -321,13 +324,13 @@ class ClipboardWindow(Adw.ApplicationWindow):
         return False
 
     def copy_item(self, item: ClipboardItem) -> None:
-        """Copies item content or original image to system clipboard and smoothly hides window."""
-        self.copy_item_to_clipboard(item, hide_after=True)
+        """Copies item content or original image to system clipboard while keeping picker open."""
+        self.copy_item_to_clipboard(item, hide_after=False)
 
     def copy_item_to_clipboard(
-        self, item: ClipboardItem, hide_after: bool = True
+        self, item: ClipboardItem, hide_after: bool = False
     ) -> bool:
-        """Copies an item (text or image) to system clipboard and optionally hides window."""
+        """Copies an item (text or image) to system clipboard without closing the picker window."""
         if self.monitor:
             if item.content_type == "image":
                 if item.image_path:
@@ -337,14 +340,12 @@ class ClipboardWindow(Adw.ApplicationWindow):
                     return False
             else:
                 self.monitor.copy_text(item.content or "")
-        if hide_after:
-            GLib.timeout_add(150, self.hide_window)
         return True
 
     def _on_row_activated(self, list_box: Gtk.ListBox, row: Gtk.ListBoxRow) -> None:
-        """Handles row click or Enter activation to copy full original content."""
+        """Handles row click or Enter activation to copy full original content while keeping picker open."""
         if isinstance(row, ClipboardRow):
-            self.copy_item_to_clipboard(row.item, hide_after=True)
+            self.copy_item_to_clipboard(row.item, hide_after=False)
             row.show_copied_feedback()
 
     def _on_search_changed(self, entry: Gtk.SearchEntry) -> None:

@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop-application">
-  <id>com.kashyap.UbuntuClipboard</id>
+  <id>com.kashyap.Klipora</id>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>GPL-3.0-or-later</project_license>
-  <name>Ubuntu Clipboard</name>
+  <name>Klipora</name>
   <summary>Local clipboard history manager for Ubuntu and GNOME</summary>
   <description>
     <p>
-      Ubuntu Clipboard is a fast, lightweight, and native clipboard history manager designed for Ubuntu and GNOME on Wayland.
+      Klipora is a fast, lightweight, and native clipboard history manager designed for Ubuntu and GNOME on Wayland.
     </p>
     <ul>
       <li>Text and image clipboard history tracking</li>
@@ -18,16 +18,16 @@
       <li>100% private and local SQLite storage with zero telemetry or network calls</li>
     </ul>
   </description>
-  <url type="homepage">https://github.com/kashyap/ubuntu-clipboard</url>
-  <launchable type="desktop-id">com.kashyap.UbuntuClipboard.desktop</launchable>
+  <url type="homepage">https://github.com/kashyappatadiya240-afk/clipboard-manager</url>
+  <launchable type="desktop-id">com.kashyap.Klipora.desktop</launchable>
   <provides>
-    <binary>ubuntu-clipboard</binary>
+    <binary>klipora</binary>
   </provides>
   <content_rating type="oars-1.1"/>
   <releases>
     <release version="1.0.0" date="2026-10-03">
       <description>
-        <p>Initial production release of Ubuntu Clipboard.</p>
+        <p>Initial production release of Klipora.</p>
       </description>
     </release>
   </releases>

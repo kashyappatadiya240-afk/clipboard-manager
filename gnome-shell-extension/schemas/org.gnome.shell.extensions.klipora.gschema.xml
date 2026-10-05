@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.klipora" path="/org/gnome/shell/extensions/klipora/">
+    <key name="toggle-clipboard-picker" type="as">
+      <default><![CDATA[['<Super>v']]]></default>
+      <summary>Toggle Klipora Picker</summary>
+      <description>Keybinding to toggle the clipboard picker overlay.</description>
+    </key>
+  </schema>
+</schemalist>

@@ -1,0 +1,61 @@
+.clipboard-picker-container {
+    background-color: rgba(30, 30, 30, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 14px;
+    padding: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.55);
+}
+
+.clipboard-search-entry {
+    background-color: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    color: #ffffff;
+    padding: 8px 12px;
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.clipboard-search-entry:focus {
+    border-color: #3584e4;
+    background-color: rgba(255, 255, 255, 0.12);
+}
+
+.clipboard-scroll-view {
+    max-height: 320px;
+}
+
+.clipboard-item-list {
+    spacing: 4px;
+}
+
+.clipboard-item-button {
+    background-color: transparent;
+    border-radius: 6px;
+    padding: 8px 12px;
+    text-align: left;
+    color: #f0f0f0;
+    transition-duration: 100ms;
+}
+
+.clipboard-item-button:hover,
+.clipboard-item-button:focus {
+    background-color: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+}
+
+.clipboard-item-button:active {
+    background-color: rgba(53, 132, 228, 0.35);
+    color: #ffffff;
+}
+
+.clipboard-item-label {
+    font-size: 13px;
+}
+
+.clipboard-empty-label {
+    color: rgba(255, 255, 255, 0.5);
+    padding: 24px;
+    text-align: center;
+    font-size: 13px;
+}

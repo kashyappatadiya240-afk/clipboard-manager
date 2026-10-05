@@ -17,6 +17,7 @@ except ImportError:
 from clipboard.database import ClipboardDatabase
 from clipboard.models import ClipboardItem
 from clipboard.monitor import ClipboardMonitor
+from clipboard.picker_service import PickerDBusService
 from clipboard.shortcut import register_global_shortcut
 from ui.window import ClipboardWindow
 
@@ -24,10 +25,10 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
 )
-logger = logging.getLogger("ubuntu-clipboard")
+logger = logging.getLogger("klipora")
 
 
-def set_process_title(title: str = "ubuntu-clipboard") -> None:
+def set_process_title(title: str = "klipora") -> None:
     """Sets the process title and system process name so ps aux and pgrep can identify it."""
     try:
         import setproctitle
@@ -47,12 +48,13 @@ def set_process_title(title: str = "ubuntu-clipboard") -> None:
 class ClipboardApp(Adw.Application):
     def __init__(self):
         super().__init__(
-            application_id="com.kashyap.UbuntuClipboard",
+            application_id="com.kashyap.Klipora",
             flags=Gio.ApplicationFlags.DEFAULT_FLAGS,
         )
         self.window = None
         self.database = ClipboardDatabase()
         self.monitor = None
+        self.picker_service = None
         self._is_held = False
 
     def do_startup(self):
@@ -64,6 +66,13 @@ class ClipboardApp(Adw.Application):
             on_new_item=self._on_new_clipboard_item,
         )
         self.monitor.start()
+
+        # Start D-Bus Picker service for GNOME Shell Extension integration
+        self.picker_service = PickerDBusService(
+            database=self.database,
+            monitor=self.monitor,
+        )
+        self.picker_service.start()
 
         # Hold application so it persists in the background when the launcher window hides
         self.hold()
@@ -118,6 +127,9 @@ class ClipboardApp(Adw.Application):
         if self._is_held:
             self.release()
             self._is_held = False
+        if self.picker_service:
+            self.picker_service.stop()
+            self.picker_service = None
         if self.monitor:
             self.monitor.stop()
             self.monitor = None
@@ -126,15 +138,15 @@ class ClipboardApp(Adw.Application):
 
 
 def main():
-    set_process_title("ubuntu-clipboard")
-    GLib.set_application_name("Ubuntu Clipboard")
-    GLib.set_prgname("com.kashyap.UbuntuClipboard")
+    set_process_title("klipora")
+    GLib.set_application_name("Klipora")
+    GLib.set_prgname("com.kashyap.Klipora")
     app = ClipboardApp()
     app.register(None)
     if app.get_is_remote():
-        print("Ubuntu Clipboard is already running. Showing existing window.")
+        print("Klipora is already running. Showing existing window.")
     else:
-        print("Ubuntu Clipboard started. Press Super+V to open clipboard history.")
+        print("Klipora started. Press Super+V to open clipboard history.")
     return app.run(sys.argv)
 
 

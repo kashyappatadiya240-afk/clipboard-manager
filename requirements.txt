@@ -1,4 +1,4 @@
-# Python dependencies for Ubuntu Clipboard
+# Python dependencies for Klipora
 # Note: Requires system libraries (GTK4, Libadwaita, GObject Introspection, Cairo)
 PyGObject>=3.46.0
 Pillow>=10.0.0

@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
-# User-level installation script for Ubuntu Clipboard without requiring sudo/root.
+# User-level installation script for Klipora without requiring sudo/root.
 
 set -e
 
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BIN_DIR="$HOME/.local/bin"
-APP_DIR="$HOME/.local/share/ubuntu-clipboard-app"
+APP_DIR="$HOME/.local/share/klipora-app"
 DESKTOP_DIR="$HOME/.local/share/applications"
 ICONS_DIR="$HOME/.local/share/icons"
 
-echo "=== Installing Ubuntu Clipboard to $HOME/.local ==="
+echo "=== Installing Klipora to $HOME/.local ==="
 
 mkdir -p "$BIN_DIR" "$APP_DIR" "$DESKTOP_DIR" "$ICONS_DIR"
 
@@ -25,15 +25,19 @@ for pkg in clipboard ui config; do
 done
 
 # 2. Install executable launcher
-cat << 'EOF' > "$BIN_DIR/ubuntu-clipboard"
+cat << 'EOF' > "$BIN_DIR/klipora"
 #!/bin/sh
-exec /usr/bin/python3 "$HOME/.local/share/ubuntu-clipboard-app/app.py" "$@"
+exec /usr/bin/python3 "$HOME/.local/share/klipora-app/app.py" "$@"
 EOF
-chmod 755 "$BIN_DIR/ubuntu-clipboard"
+chmod 755 "$BIN_DIR/klipora"
+
+# Remove launchers from previous product names (ClipNova, ClipShelf, Ubuntu Clipboard).
+rm -f "$BIN_DIR/clipnova" "$BIN_DIR/clipshelf" "$BIN_DIR/ubuntu-clipboard"
+rm -f "$DESKTOP_DIR/com.kashyap.ClipNova.desktop" "$DESKTOP_DIR/com.kashyap.ClipShelf.desktop" "$DESKTOP_DIR/com.kashyap.UbuntuClipboard.desktop"
 
 # 3. Install desktop launcher
-sed "s|Exec=ubuntu-clipboard|Exec=$BIN_DIR/ubuntu-clipboard|" "$PROJECT_ROOT/resources/com.kashyap.UbuntuClipboard.desktop" > "$DESKTOP_DIR/com.kashyap.UbuntuClipboard.desktop"
-chmod 644 "$DESKTOP_DIR/com.kashyap.UbuntuClipboard.desktop"
+sed "s|Exec=klipora|Exec=$BIN_DIR/klipora|" "$PROJECT_ROOT/resources/com.kashyap.Klipora.desktop" > "$DESKTOP_DIR/com.kashyap.Klipora.desktop"
+chmod 644 "$DESKTOP_DIR/com.kashyap.Klipora.desktop"
 
 # 4. Install icons
 if [ -d "$PROJECT_ROOT/resources/icons" ]; then
@@ -48,5 +52,5 @@ if which gtk-update-icon-cache >/dev/null 2>&1; then
     gtk-update-icon-cache -q -t -f "$ICONS_DIR/hicolor" || true
 fi
 
-echo "=== Ubuntu Clipboard successfully installed to ~/.local ==="
-echo "You can launch it with: ~/.local/bin/ubuntu-clipboard"
+echo "=== Klipora successfully installed to ~/.local ==="
+echo "You can launch it with: ~/.local/bin/klipora"

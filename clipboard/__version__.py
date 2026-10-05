@@ -1,7 +1,7 @@
-"""Version and application metadata for Ubuntu Clipboard."""
+"""Version and application metadata for Klipora."""
 
 __version__ = "1.0.0"
-__app_id__ = "com.kashyap.UbuntuClipboard"
-__app_name__ = "Ubuntu Clipboard"
+__app_id__ = "com.kashyap.Klipora"
+__app_name__ = "Klipora"
 __description__ = "Local clipboard history manager for Ubuntu and GNOME"
 __author__ = "Kashyap"

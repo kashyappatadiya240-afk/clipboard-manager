@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build script for Ubuntu Clipboard Debian (.deb) package."""
+"""Build script for Klipora Debian (.deb) package."""
 
 import os
 import pathlib
@@ -13,7 +13,7 @@ BUILD_DIR = PROJECT_ROOT / "build" / "deb_pkg"
 
 
 def build_deb() -> pathlib.Path:
-    print("=== Building Ubuntu Clipboard Debian Package ===", flush=True)
+    print("=== Building Klipora Debian Package ===", flush=True)
 
     # 1. Clean previous build dirs
     if BUILD_DIR.exists():
@@ -23,7 +23,7 @@ def build_deb() -> pathlib.Path:
     # 2. Setup standard debian layout
     debian_dir = BUILD_DIR / "DEBIAN"
     usr_bin = BUILD_DIR / "usr" / "bin"
-    usr_share_app = BUILD_DIR / "usr" / "share" / "ubuntu-clipboard"
+    usr_share_app = BUILD_DIR / "usr" / "share" / "klipora"
     usr_share_desktop = BUILD_DIR / "usr" / "share" / "applications"
     usr_share_icons = BUILD_DIR / "usr" / "share" / "icons"
     usr_share_metainfo = BUILD_DIR / "usr" / "share" / "metainfo"
@@ -39,7 +39,7 @@ def build_deb() -> pathlib.Path:
         d.mkdir(parents=True, exist_ok=True)
 
     # 3. Create DEBIAN/control
-    control_content = """Package: ubuntu-clipboard
+    control_content = """Package: klipora
 Version: 1.0.0
 Section: utils
 Priority: optional
@@ -48,7 +48,7 @@ Maintainer: Kashyap <kashyap@localhost>
 Depends: python3 (>= 3.10), python3-gi (>= 3.42.0), gir1.2-gtk-4.0, gir1.2-adw-1, python3-pil, python3-setproctitle
 Recommends: libglib2.0-bin
 Description: Local clipboard history manager for Ubuntu and GNOME
- Ubuntu Clipboard is a native, local-only clipboard history manager
+ Klipora is a native, local-only clipboard history manager
  built with GTK4, Libadwaita, and SQLite for GNOME on Wayland.
  .
  Features:
@@ -98,10 +98,10 @@ exit 0
     postrm_file.write_text(postrm_content, encoding="utf-8")
     postrm_file.chmod(0o755)
 
-    # 5. Launcher binary in /usr/bin/ubuntu-clipboard
-    launcher_file = usr_bin / "ubuntu-clipboard"
+    # 5. Launcher binary in /usr/bin/klipora
+    launcher_file = usr_bin / "klipora"
     launcher_content = """#!/bin/sh
-exec /usr/bin/python3 /usr/share/ubuntu-clipboard/app.py "$@"
+exec /usr/bin/python3 /usr/share/klipora/app.py "$@"
 """
     launcher_file.write_text(launcher_content, encoding="utf-8")
     launcher_file.chmod(0o755)
@@ -120,13 +120,13 @@ exec /usr/bin/python3 /usr/share/ubuntu-clipboard/app.py "$@"
         )
 
     # 7. Copy desktop file and AppStream metainfo
-    desktop_src = PROJECT_ROOT / "resources" / "com.kashyap.UbuntuClipboard.desktop"
-    shutil.copy2(desktop_src, usr_share_desktop / "com.kashyap.UbuntuClipboard.desktop")
-    (usr_share_desktop / "com.kashyap.UbuntuClipboard.desktop").chmod(0o644)
+    desktop_src = PROJECT_ROOT / "resources" / "com.kashyap.Klipora.desktop"
+    shutil.copy2(desktop_src, usr_share_desktop / "com.kashyap.Klipora.desktop")
+    (usr_share_desktop / "com.kashyap.Klipora.desktop").chmod(0o644)
 
-    metainfo_src = PROJECT_ROOT / "resources" / "com.kashyap.UbuntuClipboard.metainfo.xml"
-    shutil.copy2(metainfo_src, usr_share_metainfo / "com.kashyap.UbuntuClipboard.metainfo.xml")
-    (usr_share_metainfo / "com.kashyap.UbuntuClipboard.metainfo.xml").chmod(0o644)
+    metainfo_src = PROJECT_ROOT / "resources" / "com.kashyap.Klipora.metainfo.xml"
+    shutil.copy2(metainfo_src, usr_share_metainfo / "com.kashyap.Klipora.metainfo.xml")
+    (usr_share_metainfo / "com.kashyap.Klipora.metainfo.xml").chmod(0o644)
 
     # 8. Copy icons
     icons_src = PROJECT_ROOT / "resources" / "icons"
@@ -140,7 +140,7 @@ exec /usr/bin/python3 /usr/share/ubuntu-clipboard/app.py "$@"
                 target_path.chmod(0o644)
 
     # 9. Build .deb with dpkg-deb
-    deb_output_file = DIST_DIR / "ubuntu-clipboard_1.0.0_all.deb"
+    deb_output_file = DIST_DIR / "klipora_1.0.0_all.deb"
     if deb_output_file.exists():
         deb_output_file.unlink()
 

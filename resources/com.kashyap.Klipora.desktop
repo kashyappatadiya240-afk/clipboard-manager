@@ -1,13 +1,13 @@
 [Desktop Entry]
-Name=Ubuntu Clipboard
+Name=Klipora
 GenericName=Clipboard Manager
 Comment=Local clipboard history manager for Ubuntu and GNOME
-Exec=ubuntu-clipboard
-Icon=com.kashyap.UbuntuClipboard
+Exec=klipora
+Icon=com.kashyap.Klipora
 Terminal=false
 Type=Application
 Categories=Utility;GNOME;GTK;
 StartupNotify=true
-StartupWMClass=com.kashyap.UbuntuClipboard
-Keywords=clipboard;history;paste;copy;gnome;wayland;
+StartupWMClass=com.kashyap.Klipora
+Keywords=clipboard;history;paste;copy;gnome;wayland;klipora;
 X-GNOME-UsesNotifications=false

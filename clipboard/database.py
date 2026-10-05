@@ -10,7 +10,27 @@ logger = logging.getLogger(__name__)
 
 
 def get_default_db_path() -> pathlib.Path:
-    return pathlib.Path.home() / ".local" / "share" / "ubuntu-clipboard" / "clipboard.db"
+    target = pathlib.Path.home() / ".local" / "share" / "klipora" / "clipboard.db"
+    legacy_dirs = [
+        pathlib.Path.home() / ".local" / "share" / "clipnova",
+        pathlib.Path.home() / ".local" / "share" / "clipshelf",
+        pathlib.Path.home() / ".local" / "share" / "ubuntu-clipboard",
+    ]
+    if not target.exists():
+        for old_dir in legacy_dirs:
+            if (old_dir / "clipboard.db").exists():
+                try:
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    import shutil
+
+                    shutil.copy2(old_dir / "clipboard.db", target)
+                    old_images = old_dir / "images"
+                    if old_images.exists():
+                        shutil.copytree(old_images, target.parent / "images", dirs_exist_ok=True)
+                    break
+                except Exception as e:
+                    logger.warning("Could not auto-migrate legacy clipboard db: %s", e)
+    return target
 
 
 class ClipboardDatabase:

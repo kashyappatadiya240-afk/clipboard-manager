@@ -1,174 +1,314 @@
-# Ubuntu Clipboard
+<div align="center">
 
-A fast, lightweight, and native clipboard history manager designed for Ubuntu and GNOME on Wayland, built with Python, GTK4, Libadwaita, and SQLite.
+<img src="resources/icons/hicolor/scalable/apps/com.kashyap.Klipora.svg" width="96" height="96" alt="Klipora Icon"/>
 
-![Ubuntu Clipboard](resources/icons/hicolor/128x128/apps/com.kashyap.UbuntuClipboard.png)
+# Klipora
 
----
+### Native, Lightweight Clipboard History Manager for Ubuntu & GNOME
 
-## Features
+[![Ubuntu](https://img.shields.io/badge/Ubuntu-22.04%20%7C%2024.04%20LTS-E95420?style=for-the-badge&logo=ubuntu&logoColor=white)](https://ubuntu.com)
+[![GTK4](https://img.shields.io/badge/GTK4-Libadwaita-3584E4?style=for-the-badge&logo=gnome&logoColor=white)](https://gnome.pages.gitlab.gnome.org/libadwaita/)
+[![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
+[![Display Server](https://img.shields.io/badge/Session-Wayland%20%26%20X11-darkviolet?style=for-the-badge)](https://wayland.freedesktop.org/)
+[![Privacy](https://img.shields.io/badge/Privacy-100%25%20Local-success?style=for-the-badge&logo=shield)](https://github.com/kashyappatadiya240-afk/clipboard-manager)
+[![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
 
-* **Text & Image Clipboard Tracking**: Automatically captures copied text and image data (PNG format).
-* **Global Super+V Shortcut**: Instantly presents the clipboard history window anywhere under GNOME / Wayland.
-* **Compact Visual Cards**: Clean 3-line previews for text cards and aspect-ratio-preserving thumbnails for image cards.
-* **Full-Content Search**: Real-time filtering against full text content (even in items exceeding 5,000 characters).
-* **Pinning & History Limits**:
-  * Pin up to 10 favorite clips so they are never removed by cleanup.
-  * FIFO limit: Retains up to 20 unpinned items (the 21st item automatically evicts the oldest unpinned item and its stored image file).
-* **Single-Instance Architecture**: Seamless D-Bus single-instance window reuse; pressing `Super+V` or activating the launcher never creates duplicate processes.
-* **Native Keyboard Navigation**:
-  * <kbd>↓</kbd> / <kbd>↑</kbd>: Navigate through clipboard items
-  * <kbd>Enter</kbd>: Copy selected item and hide window
-  * <kbd>Esc</kbd>: Hide window
-  * <kbd>Delete</kbd>: Delete focused item
-  * <kbd>F10</kbd> / <kbd>Menu</kbd> / <kbd>Ctrl+M</kbd>: Open item action popover
-* **100% Local & Private**: All data is stored locally in SQLite. Zero telemetry, zero cloud sync, and zero network calls.
+<br/>
 
----
+![Klipora Banner](docs/assets/banner.png)
 
-## System Requirements
+<p align="center">
+  <b>Klipora</b> is an elegant, lightning-fast clipboard history manager crafted natively for Ubuntu and modern GNOME desktop environments. Seamlessly track copied text and high-resolution images, search past clips in real time, and paste with a single keystroke.
+</p>
 
-### Supported Environments
-* Ubuntu 22.04 LTS, 24.04 LTS, or newer
-* GNOME Desktop on Wayland or X11
+[Quick Install](#-installation) • [How to Open](#-how-to-open-klipora) • [How to Use](#-how-to-use) • [Keyboard Shortcuts](#️-keyboard-shortcuts) • [Architecture](#️-architecture--storage) • [Troubleshooting](#-troubleshooting)
 
-### Verified Dependencies
-
-#### System Packages (`apt`)
-* `python3` (>= 3.10)
-* `python3-gi` (>= 3.42.0)
-* `gir1.2-gtk-4.0`
-* `gir1.2-adw-1`
-* `python3-pil`
-* `python3-setproctitle`
-
-#### Python Libraries
-* `PyGObject>=3.46.0`
-* `Pillow>=10.0.0`
-* `setproctitle>=1.3.0`
+</div>
 
 ---
 
-## Installation
+## 🚀 How to Open Klipora
 
-### Option 1: Debian Package (`.deb`) — Recommended
+> **The fastest way to open your clipboard history:**
 
-Download or build the Debian package and install it using `apt` or `dpkg`:
+<div align="center">
+
+### Press <kbd>Super</kbd> + <kbd>V</kbd> anywhere on your desktop
+
+*That's it. No clicking, no searching — just press the shortcut and your full clipboard history pops up instantly, ready to search and paste.*
+
+![Klipora Demo — Press Super+V to open clipboard history](docs/assets/demo.gif)
+
+| What happens | Details |
+| :--- | :--- |
+| 🟠 **Press `Super + V`** | Clipboard window opens centered on your screen |
+| 🔍 **Type to search** | Instantly filters your history in real time |
+| ↑↓ **Arrow keys** | Navigate between clipboard items |
+| ⏎ **Press `Enter`** | Copies selected item — window stays open |
+| **`Esc`** | Hides the window, background monitor keeps running |
+
+</div>
+
+---
+
+## 🎨 App Layout
+
+<div align="center">
+
+| Dark Mode (GNOME Adwaita Dark) | Light Mode (GNOME Adwaita Light) |
+| :---: | :---: |
+| <img src="docs/assets/app_layout_dark.png" width="420" alt="Klipora Dark Mode"/> | <img src="docs/assets/app_layout_light.png" width="420" alt="Klipora Light Mode"/> |
+
+</div>
+
+---
+
+## ✨ Features
+
+* **⚡ Text & High-Resolution Image Tracking**:
+  Automatically intercepts copied plain text, rich text, code snippets, and image bitmaps (normalized to lossless PNG).
+* **🎯 Global <kbd>Super</kbd> + <kbd>V</kbd> Shortcut**:
+  Summon your history popup anytime, anywhere across your entire desktop session.
+* **🔄 Persistent Picker with Instant Feedback**:
+  Selecting an item copies it immediately to your system clipboard and shows a green checkmark feedback badge while keeping the picker open — allowing you to copy multiple clips in sequence without reopening the window.
+* **🔍 Real-Time Full-Text Search**:
+  Instant fuzzy search across all your saved history, searching through items exceeding 5,000+ characters with zero lag.
+* **📌 Smart Pinning & Automatic FIFO Eviction**:
+  * Pin up to 10 essential clips (passwords, email templates, frequently used commands) to keep them permanently stored.
+  * Automatic FIFO retention maintains the 20 freshest unpinned clips; older unpinned entries and their image cache are automatically pruned.
+* **🔒 100% Offline & Private**:
+  All clips are stored locally in an embedded SQLite database. Zero telemetry, zero external network requests, and zero cloud sync.
+* **🎨 Native Libadwaita & GNOME Polish**:
+  Follows system dark/light accent colors, provides smooth GTK4 hardware-accelerated animations, and preserves native GNOME Mutter window stacking.
+* **🛡️ Single-Instance D-Bus Architecture**:
+  Reuses existing background daemon; activating the launcher or pressing the shortcut never spawns duplicate processes.
+
+---
+
+## ⌨️ Keyboard Shortcuts
+
+| Shortcut | Action | Description |
+| :--- | :--- | :--- |
+| <kbd>Super</kbd> + <kbd>V</kbd> | **Open / Toggle History** | Opens your clipboard history from anywhere on the desktop |
+| <kbd>↓</kbd> / <kbd>↑</kbd> | **Navigate** | Move focus smoothly between clipboard items |
+| <kbd>Enter</kbd> | **Copy Clip** | Copies selected item to clipboard with visual feedback; keeps picker open |
+| <kbd>Esc</kbd> | **Dismiss** | Closes and hides the picker window cleanly |
+| <kbd>Delete</kbd> | **Delete Clip** | Deletes the focused clip and cleans up associated image files |
+| <kbd>Ctrl</kbd> + <kbd>P</kbd> | **Toggle Pin** | Pins or unpins the highlighted clip (up to 10 pinned items) |
+| <kbd>Ctrl</kbd> + <kbd>M</kbd> / <kbd>F10</kbd> | **Item Menu** | Opens the contextual actions popover for additional options |
+| <kbd>Ctrl</kbd> + <kbd>F</kbd> | **Search** | Moves focus directly to the search bar |
+
+---
+
+## 🚀 Installation
+
+### Option 1: 1-Step User Install (Recommended — No Root/Sudo Required)
+
+Install directly to your user account (`~/.local/`):
 
 ```bash
-# Build the package
-python3 packaging/build_deb.py
-
-# Install system-wide
-sudo apt install ./dist/ubuntu-clipboard_1.0.0_all.deb
-```
-
-Once installed, **Ubuntu Clipboard** is available in your GNOME Application menu, and the `Super+V` shortcut is automatically registered.
-
-### Option 2: User-Space Installation (No root / sudo required)
-
-To install exclusively for your local user account (`~/.local`):
-
-```bash
+git clone https://github.com/kashyappatadiya240-afk/clipboard-manager.git
+cd clipboard-manager
 ./packaging/install_user.sh
 ```
 
-This installs the binary to `~/.local/bin/ubuntu-clipboard` and sets up the desktop launcher and icons in `~/.local/share/`.
+This installs:
+* Executable script to `~/.local/bin/klipora`
+* Desktop application launcher in your GNOME app grid
+* High-resolution application icons
+* Automatic global <kbd>Super</kbd> + <kbd>V</kbd> keybinding registration
+
+---
+
+### Option 2: Native Debian Package (`.deb`)
+
+Build and install a system-wide Debian package:
+
+```bash
+# 1. Build the Debian package
+python3 packaging/build_deb.py
+
+# 2. Install using apt (resolves any missing system dependencies automatically)
+sudo apt install ./dist/klipora_1.0.0_all.deb
+```
+
+---
 
 ### Option 3: Running from Source (Development)
 
+Ensure your system has the required GTK4 and Libadwaita packages installed:
+
 ```bash
-# Set up virtual environment
-python3 -m venv .venv
+# Ubuntu / Debian system packages
+sudo apt update
+sudo apt install python3 python3-gi gir1.2-gtk-4.0 gir1.2-adw-1 python3-pil python3-setproctitle
+
+# Clone & set up Python virtual environment
+git clone https://github.com/kashyappatadiya240-afk/clipboard-manager.git
+cd clipboard-manager
+python3 -m venv .venv --system-site-packages
 source .venv/bin/activate
 pip install -r requirements.txt
 
-# Launch application
+# Run application
 python3 app.py
 ```
 
 ---
 
-## Usage
+### 🧩 Optional: GNOME Shell Extension (Always-On-Top Layer)
 
-1. **Start the Application**:
-   Launch `ubuntu-clipboard` or select **Ubuntu Clipboard** from your application grid. The application starts monitoring clipboard changes in the background.
-2. **Open Clipboard History**:
-   Press <kbd>Super</kbd> + <kbd>V</kbd> at any time to open the history popup.
-3. **Copy an Item**:
-   Click an item or navigate to it with the arrow keys and press <kbd>Enter</kbd>. The original full-resolution image or complete text will be placed on your clipboard and the window will close.
-4. **Pin an Item**:
-   Click the Pin button or use the action menu (<kbd>Ctrl+M</kbd>) to pin up to 10 items.
-5. **Search**:
-   Start typing immediately to filter your history in real time. Clearing the search restores full history.
-6. **Dismiss**:
-   Press <kbd>Esc</kbd> to hide the window.
+For an elevated experience on Wayland where the clipboard popup floats seamlessly over full-screen apps:
 
----
-
-## Data Storage & Safety
-
-All application data is stored in the standard XDG user data directory:
-
-```text
-~/.local/share/ubuntu-clipboard/
-├── clipboard.db       # SQLite database containing clipboard history and metadata
-└── images/            # Stored PNG image clips referenced by clipboard.db
-```
-
-* **Persistence**: Data survives application and system restarts.
-* **Automatic Eviction**: When unpinned items exceed 20, older items and their corresponding PNG files are automatically purged.
-* **Clean History**: Clicking "Clear History" deletes all unpinned items and image files while safely preserving all pinned items.
-
----
-
-## Privacy & Security
-
-* **Local Storage Only**: Clipboard content never leaves your machine.
-* **No Telemetry**: No tracking, metrics, crash telemetry, or external services.
-* **Sanitized Logs**: Application logs record only event metrics (character count, byte sizes) and never log raw clipboard text or images.
-* **Native GDK/Wayland**: Pure native clipboard APIs without external utilities (`xclip`, `wl-copy`, `xdotool`).
-
----
-
-## Uninstallation
-
-### If installed via `.deb`:
 ```bash
-sudo apt remove ubuntu-clipboard
-```
+# Install extension files
+mkdir -p ~/.local/share/gnome-shell/extensions/klipora@kashyap.com
+cp -r gnome-shell-extension/* ~/.local/share/gnome-shell/extensions/klipora@kashyap.com/
+glib-compile-schemas ~/.local/share/gnome-shell/extensions/klipora@kashyap.com/schemas/
 
-### If installed via user script:
-```bash
-./packaging/uninstall_user.sh
+# Enable extension
+gnome-extensions enable klipora@kashyap.com
 ```
-
-> **Note**: In accordance with user data safety standards, uninstallation leaves your personal clipboard history database (`~/.local/share/ubuntu-clipboard/`) intact. If you wish to remove all history data permanently:
-> ```bash
-> rm -rf ~/.local/share/ubuntu-clipboard
-> ```
 
 ---
 
-## Troubleshooting
+## 💡 How to Use
 
-### `Super + V` does not open the window
-1. Verify the application is running:
+### 1. Launch & Persistent Background Daemon
+Start **Klipora** from your GNOME Applications grid or terminal. The app quietly stays resident in the background and continuously monitors the clipboard:
+```bash
+klipora
+```
+
+### 2. Open Clipboard History — Press <kbd>Super</kbd> + <kbd>V</kbd>
+Press <kbd>Super</kbd> + <kbd>V</kbd> anywhere on your desktop. The window opens centered and focused, ready for keyboard or mouse input.
+
+> 💡 **Tip:** You can press <kbd>Super</kbd> + <kbd>V</kbd> again to hide the window, or press <kbd>Esc</kbd> to dismiss it. The background monitor always keeps running.
+
+### 3. Copying & Multi-Clip Pasting
+* Click any card or navigate with arrow keys and press <kbd>Enter</kbd>.
+* The original content (full text or full-resolution PNG) is placed onto your clipboard.
+* A checkmark badge (**Copied**) confirms the copy.
+* **The picker remains open**: You can copy an item, switch to another document, or copy multiple items one after another without repeatedly pressing <kbd>Super</kbd> + <kbd>V</kbd>.
+
+### 4. Pinning Favorites
+Click the pin button or press <kbd>Ctrl</kbd> + <kbd>P</kbd> on any row. Pinned rows display an accent-colored border and a star icon, ensuring they remain at the top of your list and are protected from automatic eviction.
+
+### 5. Instant Filtering
+Type any word into the search bar. The list instantly filters matching items across both pinned and recent clips. Clear the search bar with <kbd>Esc</kbd> or the clear button to restore your full history.
+
+### 6. Dismissing the Window
+Press <kbd>Esc</kbd> or click outside the window to hide it. The background monitor stays running, ready for your next <kbd>Super</kbd> + <kbd>V</kbd>.
+
+---
+
+## 🏗️ Architecture & Storage
+
+```
+~/.local/share/klipora/
+├── clipboard.db       # Embedded SQLite database storing history, types & timestamps
+└── images/            # Lossless PNG image files referenced by database entries
+```
+
+### SQLite Schema
+```sql
+CREATE TABLE IF NOT EXISTS clipboard_items (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    content TEXT,
+    content_type TEXT NOT NULL DEFAULT 'text',   -- 'text' or 'image'
+    created_at TEXT NOT NULL,                    -- ISO 8601 UTC timestamp
+    is_pinned INTEGER NOT NULL DEFAULT 0,        -- 0 = regular, 1 = pinned
+    image_path TEXT,                             -- Absolute path to cached PNG file
+    image_hash TEXT                              -- SHA-256 hash for deduplication
+);
+```
+
+### Tech Stack
+* **UI**: GTK4 (`Gtk.ListBox`, `Gtk.SearchEntry`, `Gtk.Picture`, `Gtk.Box`)
+* **Styling**: Libadwaita (`Adw.Application`, `Adw.ApplicationWindow`, `Adw.HeaderBar`)
+* **Database**: SQLite3 with thread-safe connection pooling & automated migrations
+* **Images**: Pillow (PIL) for image aspect ratio thumbnailing and normalization
+* **IPC**: D-Bus Single-Instance activation (`GApplication` + `Gio.DBusExportedObject`)
+* **Global Shortcut**: GNOME Settings Daemon Media Keys GSettings API
+
+---
+
+## 🛡️ Privacy & Security Guarantees
+
+* **Zero Cloud Calls**: No network sockets are ever opened. Your clipboard history never leaves your device.
+* **No Telemetry**: No tracking, analytics, or background telemetry of any kind.
+* **Sanitized Logging**: Application log output prints only event metadata (e.g. byte length, item ID) and strictly redacts raw clipboard text and image contents.
+* **Native Desktop APIs**: Communicates directly through GDK/Wayland clipboard APIs without executing insecure external shell utilities.
+
+---
+
+## 🔧 Troubleshooting
+
+<details>
+<summary><b>1. Pressing <kbd>Super</kbd> + <kbd>V</kbd> does not open the window</b></summary>
+<br/>
+
+1. Verify that the background process is running:
    ```bash
-   pgrep -af ubuntu-clipboard
+   pgrep -af klipora
    ```
-2. Verify GNOME custom keybinding in GSettings:
+2. Check if the GNOME custom shortcut is registered:
    ```bash
    gsettings get org.gnome.settings-daemon.plugins.media-keys custom-keybindings
    ```
-   If needed, re-register the shortcut by launching `ubuntu-clipboard` once.
-3. If GNOME Notification Center / Message Tray conflicts with `Super+V`, the application automatically resolves this during startup.
+3. Re-run `klipora` once in a terminal; it automatically repairs and re-registers the keybinding in GSettings.
+</details>
 
-### "Ubuntu Clipboard is already running"
-Ubuntu Clipboard enforces a single-instance model using D-Bus. Running `ubuntu-clipboard` while it is already active simply brings the existing window to the foreground.
+<details>
+<summary><b>2. "Klipora is already running" message</b></summary>
+<br/>
 
-### Images not rendering
-Ensure `Pillow` and `gir1.2-gtk-4.0` are installed. Image files are stored in `~/.local/share/ubuntu-clipboard/images/`. Verify your user account has read/write permissions to that folder:
+This is expected behavior. **Klipora** enforces a strict single-instance model. Running the command while the app is active notifies the primary process to present the existing window rather than spawning duplicate instances.
+</details>
+
+<details>
+<summary><b>3. How to change the global shortcut</b></summary>
+<br/>
+
+You can customize the shortcut via GNOME Settings:
+1. Open **Settings** → **Keyboard** → **Keyboard Shortcuts** → **Custom Shortcuts**.
+2. Locate **Klipora History**.
+3. Set your preferred key combination (e.g., <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>V</kbd>).
+</details>
+
+<details>
+<summary><b>4. Resetting or clearing all clipboard data</b></summary>
+<br/>
+
+To completely reset the history database and stored image cache:
 ```bash
-chmod -R u+rw ~/.local/share/ubuntu-clipboard
+pkill -f klipora
+rm -rf ~/.local/share/klipora
+klipora &
 ```
+</details>
+
+---
+
+## 🗑️ Uninstallation
+
+* **If installed via User Script**:
+  ```bash
+  ./packaging/uninstall_user.sh
+  ```
+* **If installed via Debian Package**:
+  ```bash
+  sudo apt remove klipora
+  ```
+
+---
+
+## 📄 License
+
+This project is licensed under the [MIT License](LICENSE) — free to use, modify, and distribute for personal and commercial use.
+
+<div align="center">
+  <img src="resources/icons/hicolor/scalable/apps/com.kashyap.Klipora.svg" width="48" height="48" alt="Klipora"/>
+  <br/>
+  <sub>Built with ❤️ for the Ubuntu & GNOME open-source community.</sub>
+</div>
