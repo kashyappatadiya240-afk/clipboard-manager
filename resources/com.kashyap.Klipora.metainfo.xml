@@ -25,9 +25,14 @@
   </provides>
   <content_rating type="oars-1.1"/>
   <releases>
+    <release version="1.1.0" date="2026-10-05">
+      <description>
+        <p>Rebrand to Klipora with refreshed visual assets, persistent picker feedback, and GNOME Shell extension support.</p>
+      </description>
+    </release>
     <release version="1.0.0" date="2026-10-03">
       <description>
-        <p>Initial production release of Klipora.</p>
+        <p>Initial production release.</p>
       </description>
     </release>
   </releases>

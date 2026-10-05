@@ -129,7 +129,7 @@ Build and install a system-wide Debian package:
 python3 packaging/build_deb.py
 
 # 2. Install using apt (resolves any missing system dependencies automatically)
-sudo apt install ./dist/klipora_1.0.0_all.deb
+sudo apt install ./dist/klipora_1.1.0_all.deb
 ```
 
 ---

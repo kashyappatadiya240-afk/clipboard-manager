@@ -40,7 +40,7 @@ def build_deb() -> pathlib.Path:
 
     # 3. Create DEBIAN/control
     control_content = """Package: klipora
-Version: 1.0.0
+Version: 1.1.0
 Section: utils
 Priority: optional
 Architecture: all
@@ -140,7 +140,7 @@ exec /usr/bin/python3 /usr/share/klipora/app.py "$@"
                 target_path.chmod(0o644)
 
     # 9. Build .deb with dpkg-deb
-    deb_output_file = DIST_DIR / "klipora_1.0.0_all.deb"
+    deb_output_file = DIST_DIR / "klipora_1.1.0_all.deb"
     if deb_output_file.exists():
         deb_output_file.unlink()
 
