@@ -25,6 +25,7 @@ def build_deb() -> pathlib.Path:
     usr_bin = BUILD_DIR / "usr" / "bin"
     usr_share_app = BUILD_DIR / "usr" / "share" / "klipora"
     usr_share_desktop = BUILD_DIR / "usr" / "share" / "applications"
+    etc_xdg_autostart = BUILD_DIR / "etc" / "xdg" / "autostart"
     usr_share_icons = BUILD_DIR / "usr" / "share" / "icons"
     usr_share_metainfo = BUILD_DIR / "usr" / "share" / "metainfo"
 
@@ -35,6 +36,7 @@ def build_deb() -> pathlib.Path:
         usr_share_desktop,
         usr_share_icons,
         usr_share_metainfo,
+        etc_xdg_autostart,
     ]:
         d.mkdir(parents=True, exist_ok=True)
 
@@ -123,6 +125,16 @@ exec /usr/bin/python3 /usr/share/klipora/app.py "$@"
     desktop_src = PROJECT_ROOT / "resources" / "com.kashyap.Klipora.desktop"
     shutil.copy2(desktop_src, usr_share_desktop / "com.kashyap.Klipora.desktop")
     (usr_share_desktop / "com.kashyap.Klipora.desktop").chmod(0o644)
+
+    # System-wide autostart so the clipboard monitor runs from login onward
+    autostart_src = PROJECT_ROOT / "resources" / "com.kashyap.Klipora.autostart.desktop"
+    autostart_dest = etc_xdg_autostart / "com.kashyap.Klipora.desktop"
+    shutil.copy2(autostart_src, autostart_dest)
+    autostart_dest.write_text(
+        autostart_dest.read_text(encoding="utf-8").replace("Exec=klipora", "Exec=/usr/bin/klipora"),
+        encoding="utf-8",
+    )
+    autostart_dest.chmod(0o644)
 
     metainfo_src = PROJECT_ROOT / "resources" / "com.kashyap.Klipora.metainfo.xml"
     shutil.copy2(metainfo_src, usr_share_metainfo / "com.kashyap.Klipora.metainfo.xml")

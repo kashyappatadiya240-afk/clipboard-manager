@@ -95,26 +95,54 @@ class ClipboardMonitor:
         """Callback invoked when GDK signals that the clipboard content has changed."""
         self.check_clipboard()
 
-    def check_clipboard(self) -> None:
+    def check_clipboard(self, force: bool = False) -> None:
         """Asynchronously reads clipboard content (image or text) if not already reading."""
-        if self._is_reading or not self._clipboard:
+        if not self._clipboard:
+            display = Gdk.Display.get_default()
+            if display:
+                self._clipboard = display.get_clipboard()
+
+        if not self._clipboard:
             return
+
+        # If forced (e.g. window presented or focused), cancel any prior in-flight read
+        if force:
+            if self._cancellable:
+                self._cancellable.cancel()
+                self._cancellable = None
+            self._is_reading = False
+
+        if self._is_reading:
+            import time
+
+            if time.time() - getattr(self, "_read_start_time", 0) > 3.0:
+                logger.debug("Stale async clipboard read detected; resetting reading lock")
+                if self._cancellable:
+                    self._cancellable.cancel()
+                    self._cancellable = None
+                self._is_reading = False
+            else:
+                return
 
         formats = self._clipboard.get_formats()
         mime_types = formats.get_mime_types()
+        if not mime_types and not force:
+            return
 
         # Format Priority: Prefer genuine image representations over text
         has_image = formats.contain_gtype(Gdk.Texture) or any(
             m.startswith("image/") for m in mime_types
         )
 
+        import time
+
+        self._read_start_time = time.time()
+        self._is_reading = True
+        self._cancellable = Gio.Cancellable()
+
         if has_image:
-            self._is_reading = True
-            self._cancellable = Gio.Cancellable()
             self._clipboard.read_texture_async(self._cancellable, self._on_read_texture_finish)
         else:
-            self._is_reading = True
-            self._cancellable = Gio.Cancellable()
             self._clipboard.read_text_async(self._cancellable, self._on_read_text_finish)
 
     def _on_read_texture_finish(self, clipboard: Gdk.Clipboard, result) -> None:
@@ -168,10 +196,14 @@ class ClipboardMonitor:
             return
 
         png_data = png_glib_bytes.get_data()
-        img_hash = hashlib.sha256(png_data).hexdigest()
+        from clipboard.image_utils import compute_image_pixel_hash
+        img_hash = compute_image_pixel_hash(png_data)
+        if not img_hash:
+            img_hash = hashlib.sha256(png_data).hexdigest()
 
-        # 4. Duplicate prevention: ignore consecutive duplicate image content
-        if img_hash == self._last_image_hash:
+        # 4. Duplicate prevention: ignore duplicate image content across memory and database
+        if img_hash == self._last_image_hash or self.database.has_image_hash(img_hash):
+            self._last_image_hash = img_hash
             return
 
         logger.info(
@@ -257,7 +289,8 @@ class ClipboardMonitor:
             with open(p, "rb") as f:
                 png_bytes = f.read()
 
-            img_hash = hashlib.sha256(png_bytes).hexdigest()
+            from clipboard.image_utils import compute_image_pixel_hash
+            img_hash = compute_image_pixel_hash(png_bytes) or hashlib.sha256(png_bytes).hexdigest()
 
             # Cancel any in-flight async read to prevent race conditions
             if self._cancellable:

@@ -102,9 +102,31 @@
 
 ## 🚀 Installation
 
-### Option 1: 1-Step User Install (Recommended — No Root/Sudo Required)
+### ⚡ Option 1: One-Command Install (Recommended)
 
-Install directly to your user account (`~/.local/`):
+Install Klipora from anywhere with a **single terminal command** — no `git clone`, no manual steps:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/kashyappatadiya240-afk/clipboard-manager/main/install.sh | bash
+```
+
+> **What this does automatically:**
+> - Installs required system packages (`python3-gi`, `gir1.2-gtk-4.0`, `gir1.2-adw-1`, etc.) via `apt`
+> - Downloads the latest Klipora source to `~/.local/share/klipora-src/`
+> - Installs Python dependencies (`Pillow`, `setproctitle`) via `pip --user`
+> - Copies app files to `~/.local/share/klipora-app/`
+> - Creates the `klipora` command at `~/.local/bin/klipora`
+> - Registers the GNOME Shell extension for always-on-top popup support
+> - Sets up autostart so Klipora launches at every login
+> - Starts the background daemon immediately
+
+**To update Klipora later**, just run the same command again — it will pull the latest version.
+
+---
+
+### Option 2: Manual User Install (No Root/Sudo Required)
+
+Clone and install directly from source:
 
 ```bash
 git clone https://github.com/kashyappatadiya240-afk/clipboard-manager.git
@@ -120,7 +142,7 @@ This installs:
 
 ---
 
-### Option 2: Native Debian Package (`.deb`)
+### Option 3: Native Debian Package (`.deb`)
 
 Build and install a system-wide Debian package:
 
@@ -134,7 +156,7 @@ sudo apt install ./dist/klipora_1.1.0_all.deb
 
 ---
 
-### Option 3: Running from Source (Development)
+### Option 4: Running from Source (Development)
 
 Ensure your system has the required GTK4 and Libadwaita packages installed:
 
@@ -170,6 +192,8 @@ glib-compile-schemas ~/.local/share/gnome-shell/extensions/klipora@kashyap.com/s
 gnome-extensions enable klipora@kashyap.com
 ```
 
+> **Note:** The one-command installer above handles the GNOME extension automatically.
+
 ---
 
 ## 💡 How to Use
@@ -179,6 +203,10 @@ Start **Klipora** from your GNOME Applications grid or terminal. The app quietly
 ```bash
 klipora
 ```
+
+> 💡 **Autostart at login:** Klipora installs an autostart entry (`~/.config/autostart/com.kashyap.Klipora.desktop`) so the clipboard monitor runs from the moment you log in — history is captured even before you open the window for the first time. Set `KLIPORA_NO_AUTOSTART=1` to opt out, or start hidden without touching autostart using `klipora --background`.
+
+> ⚠️ **Copies are only captured while Klipora is running.** If you quit the process (or before it ever started), those clipboard contents cannot be recovered later — only the most recent clipboard item is picked up on the next launch.
 
 ### 2. Open Clipboard History — Press <kbd>Super</kbd> + <kbd>V</kbd>
 Press <kbd>Super</kbd> + <kbd>V</kbd> anywhere on your desktop. The window opens centered and focused, ready for keyboard or mouse input.

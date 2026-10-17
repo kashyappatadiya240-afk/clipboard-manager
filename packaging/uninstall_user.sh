@@ -20,13 +20,16 @@ rm -rf "$APP_DIR" "$HOME/.local/share/clipnova-app" "$HOME/.local/share/clipshel
 # 3. Remove desktop entries (current and legacy names from previous product names).
 rm -f "$DESKTOP_DIR/com.kashyap.Klipora.desktop" "$DESKTOP_DIR/com.kashyap.ClipNova.desktop" "$DESKTOP_DIR/com.kashyap.ClipShelf.desktop" "$DESKTOP_DIR/com.kashyap.UbuntuClipboard.desktop"
 
-# 4. Remove icons (current and legacy icon IDs from previous product names).
+# 4. Remove autostart entry so the monitor no longer starts at login.
+rm -f "$HOME/.config/autostart/com.kashyap.Klipora.desktop"
+
+# 5. Remove icons (current and legacy icon IDs from previous product names).
 find "$ICONS_DIR" -name "com.kashyap.Klipora.*" -delete 2>/dev/null || true
 find "$ICONS_DIR" -name "com.kashyap.ClipNova.*" -delete 2>/dev/null || true
 find "$ICONS_DIR" -name "com.kashyap.ClipShelf.*" -delete 2>/dev/null || true
 find "$ICONS_DIR" -name "com.kashyap.UbuntuClipboard.*" -delete 2>/dev/null || true
 
-# 5. Update caches
+# 6. Update caches
 if which update-desktop-database >/dev/null 2>&1; then
     update-desktop-database "$DESKTOP_DIR" || true
 fi

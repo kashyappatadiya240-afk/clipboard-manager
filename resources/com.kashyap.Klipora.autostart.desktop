@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Klipora
+Comment=Clipboard history manager (runs in the background)
+Exec=klipora --background
+Terminal=false
+NoDisplay=true
+X-GNOME-Autostart-enabled=true

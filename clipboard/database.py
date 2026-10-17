@@ -89,8 +89,27 @@ class ClipboardDatabase:
                         "ALTER TABLE clipboard_items ADD COLUMN image_hash TEXT;"
                     )
 
+                self._conn.execute(
+                    """
+                    CREATE TABLE IF NOT EXISTS deleted_hashes (
+                        item_hash TEXT PRIMARY KEY,
+                        deleted_at TEXT NOT NULL
+                    );
+                    """
+                )
+                self._conn.execute(
+                    """
+                    CREATE TABLE IF NOT EXISTS app_settings (
+                        key TEXT PRIMARY KEY,
+                        value TEXT NOT NULL
+                    );
+                    """
+                )
+
             # Clean up any unreferenced image files
             self.cleanup_orphaned_images()
+            # Remove any identical duplicate images
+            self.deduplicate_images()
             # Enforce FIFO unpinned limit on existing database records
             self.enforce_unpinned_limit()
             logger.info("Database initialized successfully at: %s", self.db_path)
@@ -225,15 +244,138 @@ class ClipboardDatabase:
             logger.error("Database error adding text item: %s", e)
             return None
 
+    def has_image_hash(self, image_hash: str) -> bool:
+        """Returns True if an item with the specified image_hash already exists."""
+        if self._conn is None or not image_hash:
+            return False
+        try:
+            cursor = self._conn.execute(
+                "SELECT 1 FROM clipboard_items WHERE image_hash = ? LIMIT 1",
+                (image_hash,),
+            )
+            return cursor.fetchone() is not None
+        except sqlite3.Error as e:
+            logger.error("Error checking image_hash: %s", e)
+            return False
+
+    def add_deleted_hash(self, item_hash: str) -> None:
+        """Records a hash in the deleted_hashes table so it is never re-imported."""
+        if self._conn is None or not item_hash:
+            return
+        try:
+            now_iso = datetime.now(timezone.utc).isoformat()
+            with self._conn:
+                self._conn.execute(
+                    "INSERT OR IGNORE INTO deleted_hashes (item_hash, deleted_at) VALUES (?, ?)",
+                    (item_hash, now_iso),
+                )
+        except sqlite3.Error as e:
+            logger.debug("Error recording deleted hash %s: %s", item_hash, e)
+
+    def is_deleted_hash(self, item_hash: str) -> bool:
+        """Returns True if the item hash has previously been deleted by the user."""
+        if self._conn is None or not item_hash:
+            return False
+        try:
+            cursor = self._conn.execute(
+                "SELECT 1 FROM deleted_hashes WHERE item_hash = ? LIMIT 1",
+                (item_hash,),
+            )
+            return cursor.fetchone() is not None
+        except sqlite3.Error as e:
+            logger.debug("Error checking deleted hash: %s", e)
+            return False
+
+    def get_setting(self, key: str, default: Optional[str] = None) -> Optional[str]:
+        """Gets an application setting value from the app_settings table."""
+        if self._conn is None:
+            return default
+        try:
+            cursor = self._conn.execute(
+                "SELECT value FROM app_settings WHERE key = ? LIMIT 1",
+                (key,),
+            )
+            row = cursor.fetchone()
+            return row["value"] if row else default
+        except sqlite3.Error:
+            return default
+
+    def set_setting(self, key: str, value: str) -> None:
+        """Sets an application setting value in the app_settings table."""
+        if self._conn is None:
+            return
+        try:
+            with self._conn:
+                self._conn.execute(
+                    "INSERT OR REPLACE INTO app_settings (key, value) VALUES (?, ?)",
+                    (key, str(value)),
+                )
+        except sqlite3.Error as e:
+            logger.debug("Error setting %s: %s", key, e)
+
+    def deduplicate_images(self) -> int:
+        """Removes any older duplicate image entries sharing identical image_hash.
+        Returns the number of duplicates removed.
+        """
+        if self._conn is None:
+            return 0
+        try:
+            cursor = self._conn.execute(
+                """
+                SELECT id, image_path FROM clipboard_items
+                WHERE id NOT IN (
+                    SELECT MAX(id)
+                    FROM clipboard_items
+                    WHERE image_hash IS NOT NULL AND image_hash != ''
+                    GROUP BY image_hash
+                    UNION ALL
+                    SELECT id FROM clipboard_items
+                    WHERE image_hash IS NULL OR image_hash = ''
+                )
+                AND image_hash IS NOT NULL AND image_hash != ''
+                """
+            )
+            rows = cursor.fetchall()
+            if not rows:
+                return 0
+
+            removed = 0
+            for row in rows:
+                dup_id = row["id"]
+                img_path = row["image_path"]
+                with self._conn:
+                    self._conn.execute("DELETE FROM clipboard_items WHERE id = ?", (dup_id,))
+                if img_path:
+                    try:
+                        p = pathlib.Path(img_path)
+                        if p.is_file():
+                            p.unlink()
+                    except OSError:
+                        pass
+                removed += 1
+
+            if removed > 0:
+                logger.info("Removed %d duplicate image items from database", removed)
+            return removed
+        except sqlite3.Error as e:
+            logger.debug("Deduplication error: %s", e)
+            return 0
+
     def add_image_item(
         self,
         png_data: bytes,
         image_hash: str,
         is_pinned: bool = False,
+        created_at: Optional[str] = None,
     ) -> Optional[ClipboardItem]:
         """Inserts an image item into SQLite and saves the normalized PNG file."""
         if self._conn is None:
             logger.error("Database is not initialized")
+            return None
+
+        # Prevent duplicate insertion of identical image
+        if image_hash and self.has_image_hash(image_hash):
+            logger.info("Image item with hash %s already exists; skipping duplicate", image_hash[:10])
             return None
 
         if is_pinned and self.get_pinned_count() >= self.MAX_PINNED_ITEMS:
@@ -243,7 +385,8 @@ class ClipboardDatabase:
             )
             is_pinned = False
 
-        created_at = datetime.now(timezone.utc).isoformat()
+        if not created_at:
+            created_at = datetime.now(timezone.utc).isoformat()
         pinned_val = 1 if is_pinned else 0
         # If legacy schema had NOT NULL on content, store empty string; otherwise NULL
         content_val = "" if self._content_is_not_null else None
@@ -472,12 +615,15 @@ class ClipboardDatabase:
         image_path: Optional[str] = None
         try:
             cursor = self._conn.execute(
-                "SELECT image_path FROM clipboard_items WHERE id = ?",
+                "SELECT image_path, image_hash FROM clipboard_items WHERE id = ?",
                 (item_id,),
             )
             row = cursor.fetchone()
-            if row and row["image_path"]:
-                image_path = row["image_path"]
+            if row:
+                if row["image_path"]:
+                    image_path = row["image_path"]
+                if row["image_hash"]:
+                    self.add_deleted_hash(row["image_hash"])
 
             with self._conn:
                 cursor = self._conn.execute(
@@ -507,10 +653,18 @@ class ClipboardDatabase:
             return 0
 
         try:
+            import time
+
             cursor = self._conn.execute(
-                "SELECT image_path FROM clipboard_items WHERE is_pinned = 0 AND image_path IS NOT NULL"
+                "SELECT image_path, image_hash FROM clipboard_items WHERE is_pinned = 0"
             )
-            image_paths = [r["image_path"] for r in cursor.fetchall() if r["image_path"]]
+            rows = cursor.fetchall()
+            image_paths = []
+            for r in rows:
+                if r["image_path"]:
+                    image_paths.append(r["image_path"])
+                if r["image_hash"]:
+                    self.add_deleted_hash(r["image_hash"])
 
             with self._conn:
                 cursor = self._conn.execute(
@@ -526,6 +680,9 @@ class ClipboardDatabase:
                         p.unlink()
                 except OSError as e:
                     logger.warning("Failed to remove unpinned image file %s: %s", img_p, e)
+
+            # Advance last_screenshot_scan_time to now so old screenshots on disk are ignored
+            self.set_setting("last_screenshot_scan_time", str(time.time()))
 
             logger.info("Cleared %d unpinned clipboard items from database", deleted_count)
             return deleted_count

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import ctypes
 import logging
+import os
 import signal
 import sys
 import gi
@@ -14,15 +15,17 @@ try:
 except ImportError:
     GLibUnix = None
 
+from clipboard.autostart import ensure_autostart
 from clipboard.database import ClipboardDatabase
 from clipboard.models import ClipboardItem
 from clipboard.monitor import ClipboardMonitor
+from clipboard.screenshot_monitor import ScreenshotMonitor
 from clipboard.picker_service import PickerDBusService
 from clipboard.shortcut import register_global_shortcut
 from ui.window import ClipboardWindow
 
 logging.basicConfig(
-    level=logging.INFO,
+    level=os.environ.get("KLIPORA_LOG_LEVEL", "INFO").upper(),
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
 )
 logger = logging.getLogger("klipora")
@@ -49,11 +52,13 @@ class ClipboardApp(Adw.Application):
     def __init__(self):
         super().__init__(
             application_id="com.kashyap.Klipora",
-            flags=Gio.ApplicationFlags.DEFAULT_FLAGS,
+            flags=Gio.ApplicationFlags.DEFAULT_FLAGS
+            | Gio.ApplicationFlags.HANDLES_COMMAND_LINE,
         )
         self.window = None
         self.database = ClipboardDatabase()
         self.monitor = None
+        self.screenshot_monitor = None
         self.picker_service = None
         self._is_held = False
 
@@ -61,11 +66,19 @@ class ClipboardApp(Adw.Application):
         Adw.Application.do_startup(self)
         logger.info("Application starting up...")
         self.database.initialize()
+        ensure_autostart()
         self.monitor = ClipboardMonitor(
             database=self.database,
             on_new_item=self._on_new_clipboard_item,
         )
         self.monitor.start()
+
+        self.screenshot_monitor = ScreenshotMonitor(
+            database=self.database,
+            on_new_item=self._on_new_clipboard_item,
+            clipboard_monitor=self.monitor,
+        )
+        self.screenshot_monitor.start()
 
         # Start D-Bus Picker service for GNOME Shell Extension integration
         self.picker_service = PickerDBusService(
@@ -102,6 +115,13 @@ class ClipboardApp(Adw.Application):
         logger.info("Application activated, presenting clipboard history window...")
         self.show_clipboard_history()
 
+    def do_command_line(self, command_line: Gio.ApplicationCommandLine) -> int:
+        """Handles command line; --background starts the monitor without showing the window."""
+        args = command_line.get_arguments()
+        if not any(arg in ("--background", "-b") for arg in args[1:]):
+            self.activate()
+        return 0
+
     def show_clipboard_history(self):
         """Ensures the launcher window exists and brings it to foreground with keyboard focus."""
         if not self.window:
@@ -130,6 +150,9 @@ class ClipboardApp(Adw.Application):
         if self.picker_service:
             self.picker_service.stop()
             self.picker_service = None
+        if self.screenshot_monitor:
+            self.screenshot_monitor.stop()
+            self.screenshot_monitor = None
         if self.monitor:
             self.monitor.stop()
             self.monitor = None

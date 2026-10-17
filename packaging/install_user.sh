@@ -44,7 +44,24 @@ if [ -d "$PROJECT_ROOT/resources/icons" ]; then
     cp -r "$PROJECT_ROOT/resources/icons"/* "$ICONS_DIR/"
 fi
 
-# 5. Update caches
+# 5. Install autostart entry so the clipboard monitor runs from login onward
+AUTOSTART_DIR="$HOME/.config/autostart"
+mkdir -p "$AUTOSTART_DIR"
+sed "s|Exec=klipora|Exec=$BIN_DIR/klipora|" "$PROJECT_ROOT/resources/com.kashyap.Klipora.autostart.desktop" \
+    > "$AUTOSTART_DIR/com.kashyap.Klipora.desktop"
+chmod 644 "$AUTOSTART_DIR/com.kashyap.Klipora.desktop"
+
+# 6. Install GNOME Shell Extension
+EXT_DIR="$HOME/.local/share/gnome-shell/extensions/klipora@kashyap.com"
+if [ -d "$PROJECT_ROOT/gnome-shell-extension" ]; then
+    mkdir -p "$EXT_DIR"
+    cp -r "$PROJECT_ROOT/gnome-shell-extension"/* "$EXT_DIR/"
+    if which glib-compile-schemas >/dev/null 2>&1 && [ -d "$EXT_DIR/schemas" ]; then
+        glib-compile-schemas "$EXT_DIR/schemas" || true
+    fi
+fi
+
+# 7. Update caches
 if which update-desktop-database >/dev/null 2>&1; then
     update-desktop-database "$DESKTOP_DIR" || true
 fi

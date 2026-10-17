@@ -3,6 +3,12 @@
   "description": "Native GNOME Shell Clipboard Picker for Klipora",
   "uuid": "klipora@kashyap.com",
   "shell-version": [
+    "44",
+    "45",
+    "46",
+    "47",
+    "48",
+    "49",
     "50"
   ],
   "settings-schema": "org.gnome.shell.extensions.klipora",

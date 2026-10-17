@@ -25,6 +25,10 @@ PICKER_INTERFACE_XML = """
       <arg type="s" name="item_id" direction="in"/>
       <arg type="b" name="success" direction="out"/>
     </method>
+    <method name="StoreText">
+      <arg type="s" name="content" direction="in"/>
+      <arg type="b" name="success" direction="out"/>
+    </method>
   </interface>
 </node>
 """
@@ -98,6 +102,10 @@ class PickerDBusService:
                 (item_id,) = parameters.unpack()
                 success = self.copy_item(item_id)
                 invocation.return_value(GLib.Variant("(b)", (success,)))
+            elif method_name == "StoreText":
+                (content,) = parameters.unpack()
+                success = self.store_text(content)
+                invocation.return_value(GLib.Variant("(b)", (success,)))
             else:
                 invocation.return_error_literal(
                     Gio.DBusError,
@@ -154,6 +162,23 @@ class PickerDBusService:
             else:
                 self.monitor.copy_text(item.content or "")
                 return True
+        return False
+
+    def store_text(self, content: str) -> bool:
+        """Stores text forwarded from GNOME Shell Extension into database."""
+        if not content or not content.strip():
+            return False
+
+        latest = self.database.get_latest()
+        if latest and latest.content_type == "text" and latest.content == content:
+            return True
+
+        item = self.database.add_item(content=content, content_type="text")
+        if item:
+            logger.info("Captured text item from Shell: %d characters", len(content))
+            if self.monitor and self.monitor.on_new_item:
+                GLib.idle_add(self.monitor.on_new_item, item)
+            return True
         return False
 
     def stop(self) -> None:

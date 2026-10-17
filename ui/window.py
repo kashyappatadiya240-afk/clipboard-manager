@@ -30,7 +30,9 @@ class ClipboardWindow(Adw.ApplicationWindow):
         self.database = database
         self.monitor = monitor
         self._items: List[ClipboardItem] = []
+        self._rows: dict[int, ClipboardRow] = {}
         self._current_query: str = ""
+        self._search_debounce_id: Optional[int] = None
 
         self.set_title("Klipora")
         self.set_default_size(540, 680)
@@ -209,6 +211,8 @@ class ClipboardWindow(Adw.ApplicationWindow):
         self.list_box.add_css_class("clipboard-history-list")
         self.list_box.set_show_separators(False)
         self.list_box.connect("row-activated", self._on_row_activated)
+        self.list_box.set_filter_func(self._filter_func)
+        self.list_box.set_sort_func(self._sort_func)
 
         # Key controller on listbox to allow Arrow Up back into search entry
         list_key_ctrl = Gtk.EventControllerKey()
@@ -248,12 +252,33 @@ class ClipboardWindow(Adw.ApplicationWindow):
             surface.focus(Gdk.CURRENT_TIME)
         self.focus_search_or_list()
 
+        # Non-blocking background sync so window presentation is instant and silky smooth
+        def _deferred_sync():
+            app = self.get_application()
+            if app and hasattr(app, "screenshot_monitor") and app.screenshot_monitor:
+                app.screenshot_monitor.scan_recent_screenshots()
+            if self.monitor:
+                self.monitor.check_clipboard()
+            return False
+
+        GLib.idle_add(_deferred_sync)
+
     def focus_search_or_list(self) -> None:
-        """Focuses the search entry and highlights the first history row if available."""
+        """Focuses the search entry and highlights the first visible history row."""
         self.search_entry.grab_focus()
-        first_row = self.list_box.get_row_at_index(0)
-        if first_row:
-            self.list_box.select_row(first_row)
+        self._select_first_visible_row()
+
+    def _select_first_visible_row(self) -> None:
+        """Selects the first visible row in the list box."""
+        idx = 0
+        while True:
+            row = self.list_box.get_row_at_index(idx)
+            if not row:
+                break
+            if row.get_child_visible():
+                self.list_box.select_row(row)
+                break
+            idx += 1
 
     def _on_window_key_pressed(
         self,
@@ -348,66 +373,75 @@ class ClipboardWindow(Adw.ApplicationWindow):
             self.copy_item_to_clipboard(row.item, hide_after=False)
             row.show_copied_feedback()
 
+    def _filter_func(self, row: Gtk.ListBoxRow) -> bool:
+        """Native filter predicate for Gtk.ListBox: zero widget recreation."""
+        if not isinstance(row, ClipboardRow):
+            return True
+        if not self._current_query:
+            return True
+        item = row.item
+        if item.content_type == "image":
+            return False
+        return bool(item.content and self._current_query in item.content.casefold())
+
+    def _sort_func(self, row1: Gtk.ListBoxRow, row2: Gtk.ListBoxRow) -> int:
+        """Native sort function for Gtk.ListBox: pinned items first, then descending ID."""
+        if not isinstance(row1, ClipboardRow) or not isinstance(row2, ClipboardRow):
+            return 0
+        it1 = row1.item
+        it2 = row2.item
+        if it1.is_pinned != it2.is_pinned:
+            return -1 if it1.is_pinned else 1
+        if it1.id != it2.id:
+            return -1 if it1.id > it2.id else 1
+        return 0
+
+    def _update_stack_state(self) -> None:
+        """Updates which view (empty, no_results, history) is shown in the stack."""
+        if not self._items:
+            self.stack.set_visible_child_name("empty")
+            return
+
+        if not self._current_query:
+            self.stack.set_visible_child_name("history")
+            return
+
+        has_matches = any(self._filter_func(r) for r in self._rows.values())
+        if has_matches:
+            self.stack.set_visible_child_name("history")
+        else:
+            self.stack.set_visible_child_name("no_results")
+
     def _on_search_changed(self, entry: Gtk.SearchEntry) -> None:
-        """Invoked when the search entry text changes."""
-        self.apply_filter(entry.get_text())
+        """Invoked when the search entry text changes, with 40ms debounce."""
+        if self._search_debounce_id:
+            GLib.source_remove(self._search_debounce_id)
+            self._search_debounce_id = None
+
+        def _do_search():
+            self._search_debounce_id = None
+            self.apply_filter(entry.get_text())
+            return False
+
+        self._search_debounce_id = GLib.timeout_add(40, _do_search)
 
     def _on_stop_search(self, entry: Gtk.SearchEntry) -> None:
         """Invoked when the user cancels search (e.g. presses Escape)."""
         self.hide_window()
 
     def _sort_items(self) -> None:
-        """Sorts history items with pinned items first, then newest unpinned items."""
+        """Sorts the item list with pinned items first, then newest unpinned items."""
         self._items.sort(key=lambda it: (it.is_pinned, it.id), reverse=True)
 
     def apply_filter(self, query: str) -> None:
-        """Filters the clipboard history based on the search query."""
+        """Filters the clipboard history in-place with zero widget recreation."""
         cleaned_query = query.strip().casefold()
         self._current_query = cleaned_query
 
         self._update_clear_button_state()
-
-        # If no clipboard items exist in history at all
-        if not self._items:
-            self.list_box.remove_all()
-            self.stack.set_visible_child_name("empty")
-            return
-
-        # If search query is empty, display all items (pinned first)
-        if not cleaned_query:
-            self._render_rows(self._items)
-            self.stack.set_visible_child_name("history")
-            return
-
-        # Search against full original text content (case-insensitive substring)
-        # Image items do not match text search queries
-        matching_items = [
-            item
-            for item in self._items
-            if item.content and cleaned_query in item.content.casefold()
-        ]
-
-        if matching_items:
-            self._render_rows(matching_items)
-            self.stack.set_visible_child_name("history")
-        else:
-            self.list_box.remove_all()
-            self.stack.set_visible_child_name("no_results")
-
-    def _render_rows(self, items: List[ClipboardItem]) -> None:
-        """Populates list_box with ClipboardRow instances for given items."""
-        self.list_box.remove_all()
-        for item in items:
-            row = ClipboardRow(
-                item=item,
-                on_copy=self.copy_item,
-                on_toggle_pin=self.toggle_pin_item,
-                on_delete=self.delete_item,
-            )
-            self.list_box.append(row)
-        first_row = self.list_box.get_row_at_index(0)
-        if first_row:
-            self.list_box.select_row(first_row)
+        self.list_box.invalidate_filter()
+        self._update_stack_state()
+        self._select_first_visible_row()
 
     def show_toast(self, message: str) -> None:
         """Displays a temporary in-app toast notification."""
@@ -416,18 +450,42 @@ class ClipboardWindow(Adw.ApplicationWindow):
         self.toast_overlay.add_toast(toast)
 
     def _load_history(self) -> None:
-        """Loads items from database (up to max pinned + max unpinned) and displays them (pinned first)."""
+        """Loads items from database and creates row widgets once."""
         limit = getattr(self.database, "MAX_PINNED_ITEMS", 10) + getattr(
             self.database, "MAX_UNPINNED_ITEMS", 20
         )
         self._items = self.database.get_items(limit=limit)
+        self.list_box.remove_all()
+        self._rows.clear()
+
+        for item in self._items:
+            row = ClipboardRow(
+                item=item,
+                on_copy=self.copy_item,
+                on_toggle_pin=self.toggle_pin_item,
+                on_delete=self.delete_item,
+            )
+            self._rows[item.id] = row
+            self.list_box.append(row)
+
+        self.list_box.invalidate_sort()
         self.apply_filter(self.search_entry.get_text())
 
     def add_clipboard_item(self, item: ClipboardItem) -> None:
-        """Adds a newly captured clipboard item and enforces FIFO limitation."""
+        """Adds a newly captured clipboard item and enforces FIFO limitation without full list recreation."""
+        if not item:
+            return
         existing = next((it for it in self._items if it.id == item.id), None)
         if existing:
             return
+
+        # Prevent duplicate image cards in UI by image_hash
+        if item.content_type == "image" and item.image_hash:
+            if any(
+                it.content_type == "image" and it.image_hash == item.image_hash
+                for it in self._items
+            ):
+                return
 
         self._items.append(item)
         self._sort_items()
@@ -441,13 +499,28 @@ class ClipboardWindow(Adw.ApplicationWindow):
             for it in excess:
                 if it.image_path:
                     clear_thumbnail_cache(it.image_path)
+                row = self._rows.pop(it.id, None)
+                if row:
+                    self.list_box.remove(row)
             self._items = [it for it in self._items if it.id not in excess_ids]
 
-        query = self.search_entry.get_text() or self._current_query
-        self.apply_filter(query)
+        if item.id not in self._rows:
+            row = ClipboardRow(
+                item=item,
+                on_copy=self.copy_item,
+                on_toggle_pin=self.toggle_pin_item,
+                on_delete=self.delete_item,
+            )
+            self._rows[item.id] = row
+            self.list_box.append(row)
+
+        self.list_box.invalidate_sort()
+        self.list_box.invalidate_filter()
+        self._update_stack_state()
+        self._update_clear_button_state()
 
     def toggle_pin_item(self, item: ClipboardItem) -> None:
-        """Toggles pinned status for an item in database and updates UI."""
+        """Toggles pinned status for an item in database and updates row in-place."""
         if not item.is_pinned and hasattr(self.database, "can_pin") and not self.database.can_pin():
             self.show_toast("Pinned limit reached (maximum 10 items)")
             return
@@ -459,16 +532,25 @@ class ClipboardWindow(Adw.ApplicationWindow):
 
         if new_state is not None:
             item.is_pinned = new_state
-            self._load_history()
+            row = self._rows.get(item.id)
+            if row:
+                row.set_pinned(new_state)
+            self._sort_items()
+            self.list_box.invalidate_sort()
+            self._update_clear_button_state()
 
     def delete_item(self, item: ClipboardItem) -> None:
-        """Permanently deletes a single item from database and updates UI."""
+        """Permanently deletes a single item from database and removes row in-place."""
         if self.database.delete_item(item.id):
             if item.image_path:
                 clear_thumbnail_cache(item.image_path)
             self._items = [it for it in self._items if it.id != item.id]
-            query = self.search_entry.get_text() or self._current_query
-            self.apply_filter(query)
+            row = self._rows.pop(item.id, None)
+            if row:
+                self.list_box.remove(row)
+            self.list_box.invalidate_filter()
+            self._update_stack_state()
+            self._update_clear_button_state()
 
     def _on_clear_clicked(self, button: Gtk.Button) -> None:
         """Prompts user confirmation before clearing unpinned clipboard history."""
@@ -496,12 +578,17 @@ class ClipboardWindow(Adw.ApplicationWindow):
         dialog.choose(self, None, on_response)
 
     def clear_history(self) -> None:
-        """Clears all unpinned history from database and updates UI."""
+        """Clears all unpinned history from database and removes rows in-place."""
         self.database.clear_history()
         clear_thumbnail_cache()
+        for it in [x for x in self._items if not x.is_pinned]:
+            row = self._rows.pop(it.id, None)
+            if row:
+                self.list_box.remove(row)
         self._items = [it for it in self._items if it.is_pinned]
-        query = self.search_entry.get_text() or self._current_query
-        self.apply_filter(query)
+        self.list_box.invalidate_filter()
+        self._update_stack_state()
+        self._update_clear_button_state()
 
     def _update_clear_button_state(self) -> None:
         """Enables the Clear button only when unpinned items exist."""
@@ -514,7 +601,7 @@ class ClipboardWindow(Adw.ApplicationWindow):
         self.connect_monitor(monitor)
 
     def connect_monitor(self, monitor: ClipboardMonitor) -> None:
-        """Watches window activation to trigger a clipboard check when the window is focused."""
+        """Watches window activation to trigger a non-blocking clipboard check when focused."""
 
         def on_active_changed(window, pspec):
             if window.get_property("is-active"):

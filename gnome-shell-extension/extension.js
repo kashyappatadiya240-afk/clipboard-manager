@@ -21,6 +21,10 @@ const BACKEND_PICKER_IFACE_XML = `
       <arg type="s" name="item_id" direction="in"/>
       <arg type="b" name="success" direction="out"/>
     </method>
+    <method name="StoreText">
+      <arg type="s" name="content" direction="in"/>
+      <arg type="b" name="success" direction="out"/>
+    </method>
   </interface>
 </node>
 `;
@@ -72,6 +76,50 @@ export default class KliporaExtension extends Extension {
             Shell.ActionMode.NORMAL | Shell.ActionMode.OVERVIEW | Shell.ActionMode.POPUP,
             () => this.toggle()
         );
+
+        // Hook selection owner-changed to monitor system clipboard in GNOME Shell
+        this._ownerChangedId = null;
+        this._lastCopiedText = null;
+        try {
+            const selection = global.display.get_selection();
+            this._ownerChangedId = selection.connect('owner-changed', (sel, selectionType) => {
+                if (selectionType === Meta.SelectionType.SELECTION_CLIPBOARD) {
+                    this._onClipboardOwnerChanged();
+                }
+            });
+        } catch (e) {
+            console.error('[Klipora] Failed to hook selection owner-changed:', e);
+        }
+
+        // Automatically hide picker when entering overview / Show Apps
+        this._overviewShowingId = null;
+        try {
+            this._overviewShowingId = Main.overview.connect('showing', () => {
+                this.hide();
+            });
+        } catch (e) {
+            console.error('[Klipora] Failed to connect to overview showing signal:', e);
+        }
+
+        // Dismiss picker when clicking outside container
+        this._stageEventId = null;
+        try {
+            this._stageEventId = global.stage.connect('captured-event', (actor, event) => {
+                if (!this._container || !this._container.visible) {
+                    return Clutter.EVENT_PROPAGATE;
+                }
+                if (event.type() === Clutter.EventType.BUTTON_PRESS) {
+                    const target = event.get_source();
+                    if (target && this._container.contains(target)) {
+                        return Clutter.EVENT_PROPAGATE;
+                    }
+                    this.hide();
+                }
+                return Clutter.EVENT_PROPAGATE;
+            });
+        } catch (e) {
+            console.error('[Klipora] Failed to connect stage captured-event:', e);
+        }
 
         console.log('[Klipora] GNOME Shell extension enabled successfully.');
     }
@@ -146,11 +194,18 @@ export default class KliporaExtension extends Extension {
             return Clutter.EVENT_PROPAGATE;
         });
 
+        this._updatePosition();
+        this._container.visible = false;
+
         // Add to top chrome layer so it remains visually above normal application windows
+        // NOTE: trackFullscreen must be false; if true, GNOME Shell layout manager
+        // will automatically force actor.visible = true when entering overview / Show Apps!
         Main.layoutManager.addTopChrome(this._container, {
             affectsStruts: false,
-            trackFullscreen: true,
+            trackFullscreen: false,
         });
+
+        this._container.hide();
     }
 
     _updatePosition() {
@@ -293,9 +348,56 @@ export default class KliporaExtension extends Extension {
         });
     }
 
+    _onClipboardOwnerChanged() {
+        if (!this._proxy) {
+            this._initDBus();
+        }
+        const clipboard = St.Clipboard.get_default();
+        if (!clipboard) return;
+
+        clipboard.get_text(St.ClipboardType.CLIPBOARD, (cb, text) => {
+            if (!text || !text.trim() || text === this._lastCopiedText) return;
+            this._lastCopiedText = text;
+            if (this._proxy) {
+                this._proxy.StoreTextRemote(text, (success, error) => {
+                    if (error) {
+                        console.error('[Klipora] StoreText error:', error);
+                    }
+                });
+            }
+        });
+    }
+
     disable() {
         console.log('[Klipora] Disabling GNOME Shell extension...');
         Main.wm.removeKeybinding('toggle-clipboard-picker');
+
+        if (this._overviewShowingId) {
+            try {
+                Main.overview.disconnect(this._overviewShowingId);
+            } catch (e) {
+                // Ignore
+            }
+            this._overviewShowingId = null;
+        }
+
+        if (this._stageEventId) {
+            try {
+                global.stage.disconnect(this._stageEventId);
+            } catch (e) {
+                // Ignore
+            }
+            this._stageEventId = null;
+        }
+
+        if (this._ownerChangedId) {
+            try {
+                global.display.get_selection().disconnect(this._ownerChangedId);
+            } catch (e) {
+                // Ignore
+            }
+            this._ownerChangedId = null;
+        }
 
         if (this._dbusImpl) {
             try {

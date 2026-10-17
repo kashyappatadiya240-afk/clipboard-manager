@@ -39,11 +39,12 @@ def get_thumbnail_texture(
 
         with Image.open(p) as img:
             # Create bounded thumbnail preserving original aspect ratio without upscaling
-            img.thumbnail((max_width, max_height), Image.Resampling.LANCZOS)
-            buf = io.BytesIO()
-            img.save(buf, format="PNG")
-            gbytes = GLib.Bytes.new(buf.getvalue())
-            texture = Gdk.Texture.new_from_bytes(gbytes)
+            img = img.convert("RGBA")
+            img.thumbnail((max_width, max_height), Image.Resampling.BILINEAR)
+            w, h = img.size
+            raw_bytes = img.tobytes()
+            gbytes = GLib.Bytes.new(raw_bytes)
+            texture = Gdk.MemoryTexture.new(w, h, Gdk.MemoryFormat.R8G8B8A8, gbytes, w * 4)
             _THUMBNAIL_CACHE[image_path] = texture
             return texture
     except Exception as e:
